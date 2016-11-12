@@ -19,10 +19,12 @@ class PayController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $data = DB::table('view_unprepayment')->where('customername', $user->name)->get();
         $total = 0;
-        foreach ($data as $v) {
-            $total += $v->fee;
-        }
-        return array(['data'=>$data, 'total'=>$total]);
+        if($data){
+            foreach ($data as $v) {
+                $total += $v->fee;
+            }
+        }            
+        return array(['status_code'=>'200','data'=>$data, 'total'=>$total]);
     }
 
     function payMoney() {
@@ -43,7 +45,7 @@ class PayController extends Controller
         $ProjectID = isset($payload['ProjectID'])?$payload['ProjectID']: null;
         $orderNo = 'CZ' . substr(time(),4) . mt_rand(1000,9999);
         $subject = isset($payload['subject']) ? $payload['subject']:'充值金额';
-        $user = $this->auth->user();
+        $user = JWTAuth::parseToken()->authenticate();
         if($ProjectID){
             $url = "http://ziyawang.com/project/".$ProjectID;
         } else {
@@ -204,5 +206,11 @@ class PayController extends Controller
         if(!isset($e)){
             return 'ok';
         }
+    }
+
+    public function payHistory(){
+        $user = JWTAuth::parseToken()->authenticate();
+        $data = DB::table('prepayment')->where('customername', $user->name)->get();
+        return array(['status_code'=>'200','data'=>$data]);
     }
 }

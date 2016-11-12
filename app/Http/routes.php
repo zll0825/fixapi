@@ -54,6 +54,8 @@ $api->version('v1', ['middleware' => 'jwt.auth'], function ($api) {
 
     //未交费记录
     $api->post('/pay/unpay', 'App\Http\Controllers\Api\V1\PayController@unpay');
+    //缴费记录
+    $api->post('/pay/paylist', 'App\Http\Controllers\Api\V1\PayController@payHistory');
     //ping++支付接口
     $api->post('/pay','App\Http\Controllers\Api\V1\PayController@payMoney');
 

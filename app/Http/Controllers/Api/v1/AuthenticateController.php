@@ -105,7 +105,11 @@ class AuthenticateController extends Controller
     public function myinfo(){
         $user = JWTAuth::parseToken()->authenticate();
         $user = DB::table('view_customerdetail')->where('customer_id', $user->id)->get();
-        return $user;
+        $user = array_map(function ($value) {
+            return (array)$value;
+        }, $user)[0];
+        $user['phone'] = trim($user['phone']);
+        return ['status_code'=>'200', 'user'=> $user];
     }
 
     /**

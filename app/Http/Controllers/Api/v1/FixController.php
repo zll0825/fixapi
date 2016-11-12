@@ -19,10 +19,10 @@ class FixController extends Controller
         $payload = app('request')->all();
         $user = JWTAuth::parseToken()->authenticate();
         $stateid = isset($payload['stateid'])?$payload['stateid']:'';
+        $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('customername', $user->name)->select('address','name','employeename','applytime')->orderBy('applytime','desc')->get();
         if($stateid){
-            $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where(['customername' => $user->name, 'stateid' => $stateid])->select('address','name','employeename')->get();
+            $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where(['customername' => $user->name, 'stateid' => $stateid])->select('address','name','employeename','applytime')->orderBy('applytime','desc')->get();
         }
-        $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('customername', $user->name)->select('address','name','employeename')->get();
         return $data;
     }
 
@@ -34,6 +34,8 @@ class FixController extends Controller
 
     public function employee(){
         $data = DB::table('employee')->get();
+        $obj = ['id'=>0,'name'=>'系统分配','phone'=>''];
+        array_unshift($data, $obj);
         return $data;
     }
 
@@ -45,14 +47,13 @@ class FixController extends Controller
         $data['phone'] = $data['phone']?$data['phone']:$user->phone2;
         $data['description'] = $payload['description'];
         $data['address'] = $payload['address'];
-        if(!isset($payload['employeename']) || !$payload['employeename']){
+        if(!isset($payload['name']) || !$payload['name']){
             $employeenames = DB::table('employee')->select('name')->get();
             shuffle($employeenames);
-            $payload['employeename'] = $employeenames[0]->name;
-            var_dump($payload['employeename']);
+            $payload['name'] = $employeenames[0]->name;
         };
-        $data['employeename'] = $payload['employeename'];
-        $data['applytime'] = date('Y-m-d');
+        $data['employeename'] = $payload['name'];
+        $data['applytime'] = date('Y-m-d H:i:s');
         $data['stateid'] = 1;
         $res = DB::table('repairrecords')->insert($data);
         if($res){
