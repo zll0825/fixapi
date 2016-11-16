@@ -47,14 +47,16 @@ class FixController extends Controller
         $data['phone'] = $data['phone']?$data['phone']:$user->phone2;
         $data['description'] = $payload['description'];
         $data['address'] = $payload['address'];
-        if(!isset($payload['name']) || !$payload['name']){
-            $employeenames = DB::table('employee')->select('name')->get();
-            shuffle($employeenames);
-            $payload['name'] = $employeenames[0]->name;
+        $data['applytime'] = date('Y-m-d H:i:s');
+        $data['stateid'] = 2;
+        if(!isset($payload['name']) || !$payload['name'] || $payload['name'] == '系统分配'){
+            // $employeenames = DB::table('employee')->select('name')->get();
+            // shuffle($employeenames);
+            // $payload['name'] = $employeenames[0]->name;
+            $data['stateid'] = 1;
+            $payload['name'] = '';
         };
         $data['employeename'] = $payload['name'];
-        $data['applytime'] = date('Y-m-d H:i:s');
-        $data['stateid'] = 1;
         $res = DB::table('repairrecords')->insert($data);
         if($res){
             return array(['status_code'=>'200', 'msg'=>'提交成功！']);
