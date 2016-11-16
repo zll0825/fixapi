@@ -30,7 +30,7 @@ class AuthenticateController extends Controller
         $phonenumber = $payload['phonenumber'];
 
         $action = app('request')->get('action');
-        $user = User::where('phone1', $payload['phonenumber'])->orWhere('phone2', $payload['phonenumber'])->first();
+        $user = User::where('phone', $payload['phonenumber'])->first();
         if(!$user) {
             return $this->response->array(['status_code' => '406', 'msg' => 'phonenumber does not exist']);
         }
@@ -75,7 +75,7 @@ class AuthenticateController extends Controller
         $validator = app('validator')->make($payload, $rules);
 
         //验证手机号是否存在
-        $user = User::where('phone1', $payload['phonenumber'])->orWhere('phone2', $payload['phonenumber'])->first();
+        $user = User::where('phone', $payload['phonenumber'])->first();
         if(!$user) {
             return $this->response->array(['status_code' => '404', 'msg' => 'phonenumber does not exist']);
         }
@@ -104,11 +104,6 @@ class AuthenticateController extends Controller
 
     public function myinfo(){
         $user = JWTAuth::parseToken()->authenticate();
-        $user = DB::table('view_customerdetail')->where('customer_id', $user->id)->get();
-        $user = array_map(function ($value) {
-            return (array)$value;
-        }, $user)[0];
-        $user['phone'] = trim($user['phone']);
         return ['status_code'=>'200', 'user'=> $user];
     }
 

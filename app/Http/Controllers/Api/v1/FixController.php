@@ -15,51 +15,59 @@ use DB;
 
 class FixController extends Controller
 {
-    public function record(){
+    public function hangup(){
         $payload = app('request')->all();
         $user = JWTAuth::parseToken()->authenticate();
-        $stateid = isset($payload['stateid'])?$payload['stateid']:'';
-        $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('customername', $user->name)->select('address','name','employeename','applytime')->orderBy('applytime','desc')->get();
-        if($stateid){
-            $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where(['customername' => $user->name, 'stateid' => $stateid])->select('address','name','employeename','applytime')->orderBy('applytime','desc')->get();
+        $id = $payload['id'];
+        $reason = $payload['reason'];
+        $tmp = DB::table('repairrecords')->where(['stateid'=>3,'id'=>$id,'employeename'=>$user->name])->orWhere(['stateid'=>2,'id'=>$id,'employeename'=>$user->name])->first();
+        if(!$tmp){
+            return ['status_code'=>'422','msg'=>'这不是您抢的单，您不能挂起！'];
         }
-        return $data;
-    }
-
-    public function location(){
-        $user = JWTAuth::parseToken()->authenticate();
-        $data = DB::table('view_customerdetail')->where('customername', $user->name)->get();
-        return $data;
-    }
-
-    public function employee(){
-        $data = DB::table('employee')->get();
-        $obj = ['id'=>0,'name'=>'系统分配','phone'=>''];
-        array_unshift($data, $obj);
-        return $data;
-    }
-
-    public function fix(){
-        $payload = app('request')->all();
-        $user = JWTAuth::parseToken()->authenticate();
-        $data['customername'] = $user->name;
-        $data['phone'] = $user->phone1?$user->phone1:'';
-        $data['phone'] = $data['phone']?$data['phone']:$user->phone2;
-        $data['description'] = $payload['description'];
-        $data['address'] = $payload['address'];
-        if(!isset($payload['name']) || !$payload['name']){
-            $employeenames = DB::table('employee')->select('name')->get();
-            shuffle($employeenames);
-            $payload['name'] = $employeenames[0]->name;
-        };
-        $data['employeename'] = $payload['name'];
-        $data['applytime'] = date('Y-m-d H:i:s');
-        $data['stateid'] = 1;
-        $res = DB::table('repairrecords')->insert($data);
+        $res = DB::table('repairrecords')->where('id',$id)->update(['stateid'=>6,'employeename'=>$user->name,'hangupreason'=>$reason]);
         if($res){
-            return array(['status_code'=>'200', 'msg'=>'提交成功！']);
+            return ['status_code'=>'200', 'msg'=>'挂起成功！'];
         } else {
-            return array(['status_code'=>'401', 'msg'=>'提交失败！']);
+            return ['status_code'=>'401', 'msg'=>'挂起失败！'];
         }
+    }
+
+    public function complete(){
+        $payload = app('request')->all();
+        $user = JWTAuth::parseToken()->authenticate();
+        $id = $payload['id'];
+        $tmp = DB::table('repairrecords')->where(['id'=>$id,'employeename'=>$user->name])->first();
+        if(!$tmp){
+            return ['status_code'=>'421','msg'=>'这不是您抢的单，您不能完成！'];
+        }
+        $res = DB::table('repairrecords')->where('id',$id)->update(['stateid'=>4,'completename'=>$user->name]);
+        if($res){
+            return ['status_code'=>'200', 'msg'=>'提交成功！'];
+        } else {
+            return ['status_code'=>'401', 'msg'=>'提交失败！'];
+        }
+    }
+
+    public function rush(){
+        $payload = app('request')->all();
+        $user = JWTAuth::parseToken()->authenticate();
+        $id = $payload['id'];
+        $tmp = DB::table('repairrecords')->where(['stateid'=>1,'id'=>$id,'employeename'=>null])->first();
+        if(!$tmp){
+            return ['status_code'=>'420','msg'=>'订单已经有人抢了！'];
+        }
+        $res = DB::table('repairrecords')->where('id',$id)->update(['stateid'=>3,'employeename'=>$user->name]);
+        if($res){
+            return ['status_code'=>'200', 'msg'=>'抢单成功！'];
+        } else {
+            return ['status_code'=>'401', 'msg'=>'抢单失败！'];
+        }
+    }
+
+    public function myrush(){
+        $payload = app('request')->all();
+        $user = JWTAuth::parseToken()->authenticate();
+        $data = DB::table('repairrecords')->where('employeename', $user->name)->orderBy('applytime','desc')->get();
+        return ['status_code'=>'200', 'data'=>$data];
     }
 }
