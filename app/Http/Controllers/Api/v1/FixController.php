@@ -40,7 +40,8 @@ class FixController extends Controller
         if(!$tmp){
             return ['status_code'=>'421','msg'=>'这不是您抢的单，您不能完成！'];
         }
-        $res = DB::table('repairrecords')->where('id',$id)->update(['stateid'=>4,'completename'=>$user->name]);
+        $completetime = date('Y-m-d H:i:s', time());
+        $res = DB::table('repairrecords')->where('id',$id)->update(['stateid'=>4,'completename'=>$user->name,'completetime'=>$completetime]);
         if($res){
             return ['status_code'=>'200', 'msg'=>'提交成功！'];
         } else {
@@ -52,7 +53,7 @@ class FixController extends Controller
         $payload = app('request')->all();
         $user = JWTAuth::parseToken()->authenticate();
         $id = $payload['id'];
-        $tmp = DB::table('repairrecords')->where(['stateid'=>1,'id'=>$id,'employeename'=>null])->first();
+        $tmp = DB::table('repairrecords')->where(['id'=>$id,'employeename'=>''])->first();
         if(!$tmp){
             return ['status_code'=>'420','msg'=>'订单已经有人抢了！'];
         }
