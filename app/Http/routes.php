@@ -43,7 +43,7 @@ $api->version('v1', ['middleware' => 'jwt.auth'], function ($api) {
     $api->post('/fix/record', 'App\Http\Controllers\Api\V1\FixController@record');
     //用户的房子
     $api->post('/fix/location', 'App\Http\Controllers\Api\V1\FixController@location');
-    //用户的房子
+    //报修
     $api->post('/fix', 'App\Http\Controllers\Api\V1\FixController@fix');
 
 
@@ -51,6 +51,8 @@ $api->version('v1', ['middleware' => 'jwt.auth'], function ($api) {
     $api->post('/feedback', 'App\Http\Controllers\Api\V1\ToolController@adviceCreate');
     //投诉建议记录
     $api->post('/feedback/list', 'App\Http\Controllers\Api\V1\ToolController@adviceList');
+    //评价
+    $api->post('/comment', 'App\Http\Controllers\Api\V1\ToolController@comment');
 
     //未交费记录
     $api->post('/pay/unpay', 'App\Http\Controllers\Api\V1\PayController@unpay');

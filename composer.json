@@ -9,7 +9,8 @@
         "laravel/framework": "5.1.*",
         "dingo/api":  "1.0.*@dev",
         "pingplusplus/pingpp-php": "^2.1",
-        "tymon/jwt-auth": "0.5.*"
+        "tymon/jwt-auth": "0.5.*",
+        "jpush/jpush": "v3.5.*"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

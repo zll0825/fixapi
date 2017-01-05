@@ -17,23 +17,49 @@ class FixController extends Controller
 {
     public function record(){
         $payload = app('request')->all();
+        $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
+        $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
+        $skipnum = ($startpage-1)*$pagecount;
         $user = JWTAuth::parseToken()->authenticate();
         $stateid = isset($payload['stateid'])?$payload['stateid']:'';
-        $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('customername', $user->name)->select('address','name','employeename','applytime')->orderBy('applytime','desc')->get();
+        // $tmp = DB::table('repairrecords')->join('employee','repairrecords.employeename','=','employee.name')->where('customername',$user->name)->first();
+        // dd($tmp);
+        $counts = DB::table('repairrecords')->leftJoin('employee','repairrecords.employeename','=','employee.name')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('customername', $user->name)->count();
+        $pages = ceil($counts/$pagecount);
+        $data = DB::table('repairrecords')->leftJoin('employee','repairrecords.employeename','=','employee.name')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('customername', $user->name)->select('repairrecords.id','repairrecords.hangupreason','repairrecords.description','address','employee.phone','employeename','repairstate.name','applytime','stateid')->orderBy('applytime','desc')->skip($skipnum)->take($pagecount)->get();
         if($stateid){
-            $data = DB::table('repairrecords')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where(['customername' => $user->name, 'stateid' => $stateid])->select('address','name','employeename','applytime')->orderBy('applytime','desc')->get();
+            $counts = DB::table('repairrecords')->join('employee','repairrecords.employeename','=','employee.name')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where(['customername' => $user->name, 'stateid' => $stateid])->count();
+            $pages = ceil($counts/$pagecount);
+            $counts = DB::table('repairrecords')->join('employee','repairrecords.employeename','=','employee.name')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where(['customername' => $user->name, 'stateid' => $stateid])->select('repairrecords.id','repairrecords.hangupreason','repairrecords.description','address','employee.phone','employeename','repairstate.name','applytime','stateid')->orderBy('applytime','desc')->skip($skipnum)->take($pagecount)->get();
         }
-        return $data;
+        foreach ($data as $v) {
+            if($v->employeename == null){
+                $v->employeename = '';
+            }
+        }
+        return ['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage];
     }
 
     public function location(){
         $user = JWTAuth::parseToken()->authenticate();
         $data = DB::table('view_customerdetail')->where('customername', $user->name)->get();
+        foreach ($data as $v) {
+            $v->ID = $v->id;
+        }
         return $data;
     }
 
     public function employee(){
-        $data = DB::table('employee')->get();
+        $payload = app('request')->all();
+        $data = [];
+        if(isset($payload['address'])){
+            $housetypes_id = DB::table('view_customerdetail')->where('address', $payload['address'])->pluck('housetypes_id');
+            $houseid = DB::table('housetypes')->where('id', $housetypes_id)->pluck('houses_id');
+            $data = DB::table('employee')->where(['houseid'=>$houseid,'status'=>'工作'])->get();
+        }
+        foreach ($data as $v) {
+            $v->ID = $v->id;
+        }
         $obj = ['id'=>0,'name'=>'系统分配','phone'=>''];
         array_unshift($data, $obj);
         return $data;
@@ -59,9 +85,22 @@ class FixController extends Controller
         $data['employeename'] = $payload['name'];
         $res = DB::table('repairrecords')->insert($data);
         if($res){
+            if($data['stateid']==1){
+                $this->push();
+            }
             return array(['status_code'=>'200', 'msg'=>'提交成功！']);
         } else {
             return array(['status_code'=>'401', 'msg'=>'提交失败！']);
         }
+    }
+
+    public function push(){
+        $client = new \JPush\Client(env('JPUSH_APPKEY'), env('JPUSH_MASTERSECRET'), base_path('storage/logs/jpush.log'));
+
+        $client->push()
+            ->setPlatform('all')
+            ->addAllAudience()
+            ->setNotificationAlert('您有新的维修申请！')
+            ->send();
     }
 }
