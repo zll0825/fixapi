@@ -29,6 +29,9 @@ $api->version('v1', function ($api) {
 
     // 维修单详情
     $api->post('/info', 'App\Http\Controllers\Api\V1\IndexController@info');
+
+    // 维修记录
+    $api->post('/record', 'App\Http\Controllers\Api\V1\FixController@record');
 });
 
 

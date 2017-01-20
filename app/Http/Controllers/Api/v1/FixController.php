@@ -71,4 +71,20 @@ class FixController extends Controller
         $data = DB::table('repairrecords')->where('employeename', $user->name)->orderBy('applytime','desc')->get();
         return ['status_code'=>'200', 'data'=>$data];
     }
+
+    public function record(){
+        $payload = app('request')->all();
+        $startpage = isset($payload['startpage']) ?  $payload['startpage'] : 1;
+        $pagecount = isset($payload['pagecount']) ?  $payload['pagecount'] : 5;
+        $skipnum = ($startpage-1)*$pagecount;
+        $counts = DB::table('repairrecords')->leftJoin('employee','repairrecords.employeename','=','employee.name')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('address', $payload['address'])->where('stateid','<>',1)->count();
+        $pages = ceil($counts/$pagecount);
+        $data = DB::table('repairrecords')->leftJoin('employee','repairrecords.employeename','=','employee.name')->join('repairstate', 'repairrecords.stateid', '=', 'repairstate.id')->where('address', $payload['address'])->where('stateid','<>',1)->select('repairrecords.id','repairrecords.hangupreason','repairrecords.description','address','employee.phone','employeename','repairstate.name','applytime','stateid','completetime','returntime','comment','commentstar')->orderBy('applytime','desc')->skip($skipnum)->take($pagecount)->get();
+        foreach ($data as $v) {
+            if($v->employeename == null){
+                $v->employeename = '';
+            }
+        }
+        return ['counts'=>$counts, 'pages'=>$pages, 'data'=>$data, 'currentpage'=>$startpage];
+    }
 }
