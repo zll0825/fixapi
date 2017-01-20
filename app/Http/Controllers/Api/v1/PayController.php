@@ -32,8 +32,9 @@ class PayController extends Controller
     function payMoney() {
 
         // api_key 获取方式：登录 [Dashboard](https://dashboard.pingxx.com)->点击管理平台右上角公司名称->开发信息-> Secret Key
-        $api_key = 'sk_live_zLm1CSrrDqn5ivLyPOvTKyTS';//正式
-        $api_key = 'sk_test_rL4yr1m14WHKvv5KeDi9e9i9';//测试
+        // $api_key = 'sk_live_zLm1CSrrDqn5ivLyPOvTKyTS';//正式
+        // $api_key = 'sk_test_rL4yr1m14WHKvv5KeDi9e9i9';//测试
+        $api_key = env('PINGXX_APPKEY');//正式
         // app_id 获取方式：登录 [Dashboard](https://dashboard.pingxx.com)->点击你创建的应用->应用首页->应用 ID(App ID)
         $app_id = 'app_LmDWf1aDeHCCjTKq';
 
@@ -141,13 +142,13 @@ class PayController extends Controller
     }
 
     public function webhooks() {
+        // dd(app('request')->all());
+
         $payload = app('request')->all()['data']['object'];
         $ordernumber = $payload['order_no'];
         $backnumber = $payload['transaction_no'];
         $order = DB::table('order')->where('ordernumber',$ordernumber)->first();
         $user = DB::table('customer')->where('name',$order->customername)->first();
-        $order->backnumber = $backnumber;
-        $order->flag = 1;
 
         //整理支付成功需要插入的数据
         DB::beginTransaction();
@@ -170,7 +171,7 @@ class PayController extends Controller
 
                 DB::statement("INSERT INTO prepayment (addresscode,customername, addressid,addressfullname,paytype,area,feestandard,fee,feeyear,receiver,receiptvoucherid,receiptdate,supplystate,receiptunit,isprint,balanceid,isdelete) VALUES ('$addresscode','$customername','$addressid','$addressfullname','$paytype','$area','$feestandard',$fee,'$feeyear','$receiver',get_receiptvoucherid(),'$receiptdate','$supplystate','',1,0,0)");
             }
-            $order->save();
+            DB::table('order')->where('ordernumber',$ordernumber)->update(['backnumber'=>$backnumber,'flag'=>1]);
 
             DB::commit();
         } catch (Exception $e){
@@ -190,7 +191,7 @@ class PayController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $counts = DB::table('prepayment')->where('customername', $user->name)->count();
         $pages = ceil($counts/$pagecount);
-        $data = DB::table('prepayment')->where('customername', $user->name)->skip($skipnum)->take($pagecount)->get();
+        $data = DB::table('prepayment')->where('customername', $user->name)->orderBy('receiptdate','desc')->skip($skipnum)->take($pagecount)->get();
         foreach ($data as $v) {
             $v->ID = $v->id;
         }

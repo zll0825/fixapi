@@ -34,6 +34,8 @@ class IndexController extends Controller
         $notice = DB::table('notice')->orderBy('id', 'desc')->first();
         if($notice){
         	$notice->ID = $notice->id;
+        } else {
+            $notice = ['content'=>""];
         }
         $pics = ['pic1'=>'/banner/1.jpg','pic2'=>'/banner/2.jpg','pic3'=>'/banner/3.jpg','pic4'=>'/banner/4.jpg'];
         return ['notice'=>$notice, 'connect'=>$connect, 'pics'=>$pics];
